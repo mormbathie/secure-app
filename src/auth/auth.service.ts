@@ -1,9 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { LoginDto, SignUpDto } from './dto/auth.dto';
-import { access } from 'fs';
-
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -24,7 +23,7 @@ export class AuthService {
         if (existingUser) {
             throw new ConflictException('Email already exists');
         }
-        const passwordHash = dto.password;
+        const passwordHash = await bcrypt.hash(dto.password,10);
         const newUser = await this.prisma.user.create({
             data: {
                 email: dto.email,
@@ -52,7 +51,7 @@ export class AuthService {
         });
 
         if (!user || user.passwordHash !== dto.password) {
-            throw new ConflictException('Invalid credentials');
+            throw new UnauthorizedException('Invalid credentials');
         }
 
         const Token = await this.signToken(user.id, user.email);
