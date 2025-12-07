@@ -49,10 +49,12 @@ export class AuthService {
         const user = await this.prisma.user.findUnique({
             where: { email: dto.email },
         });
+        const PasswordValid = await bcrypt.compare(dto.password, user?.passwordHash || '');
 
-        if (!user || user.passwordHash !== dto.password) {
+        if (!user || !PasswordValid) {
             throw new UnauthorizedException('Invalid credentials');
         }
+
 
         const Token = await this.signToken(user.id, user.email);
         return { 
